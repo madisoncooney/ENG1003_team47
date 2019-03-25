@@ -65,9 +65,11 @@ function sequenceProgress(result) {
       if (correctSequencesAtCurrent + 1 === sequenceLength - 2) {
         sequenceLength++;
         correctSequencesAtCurrent = 0;
+        failedLastSequence = false;
       }
       else {
         correctSequencesAtCurrent++;
+        failedLastSequence = false;
       }
     }
     return
