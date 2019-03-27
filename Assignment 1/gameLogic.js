@@ -13,11 +13,43 @@
  *    "yellow"
  *     "red"
 */
+//Declare and define some variables...
 let userInputSequence = [];
 let failedLastSequence = false;
 let sequenceLength = 4;
 let sequence;
 let correctSequencesAtCurrent = 0;
+let beta, gamma;
+let degreeThreshold = 10;
+
+//Function fires whenever eventlistener returns
+function orientationListener(event) {
+  beta     = event.beta;
+  gamma    = event.gamma;
+  if (controlMode === TILT_MODE && usersTurn === true)
+  {
+    if (gamma <= -degreeThreshold && beta <= -degreeThreshold)
+    {
+      selectBlueButton();
+    }
+    else if (gamma >= degreeThreshold && beta <= -degreeThreshold)
+    {
+      selectGreenButton();
+    }
+    else if (gamma >= degreeThreshold && beta >= degreeThreshold)
+    {
+      selectRedButton();
+    }
+    else if (gamma <= -degreeThreshold && beta >= degreeThreshold)
+    {
+      selectYellowButton();
+    }
+  }
+}
+
+//Start event handler
+window.addEventListener("deviceorientation", orientationListener);
+
 
 function buttonSelected(whichButton)
 {
@@ -87,6 +119,7 @@ function sequenceProgress(result) {
 
 function giveNextSequence()
 {
+    updateDisplay();
     let colours = ["blue","green","yellow","red"];
     let colourIndex;
     sequence = [];
@@ -96,10 +129,9 @@ function giveNextSequence()
       sequence.push(colours[colourIndex]);
     }
 
-    // Example return statement.
-    console.log(sequence);
+    // return statemen
+    console.log(sequence); //log
     userInputSequence = [];
-    updateDisplay();
     return sequence;
 }
 
@@ -110,9 +142,10 @@ function giveNextSequence()
 */
 function sequenceHasDisplayed()
 {
-    updateDisplay();
-    displayToastMessage("Enter the sequence.");
-    // Include your own code here
+    updateDisplay(); //Update game information to players
+    displayToastMessage("Enter the sequence."); //Prompt the user to play
+    allowButtonPresses(); //Enable user input
+
 }
 
 /*
@@ -146,21 +179,61 @@ function userChoiceTimeout()
 */
 function changeMode(mode)
 {
-    // Include your own code here
+    //Change mode
+    if (mode === TILT_MODE) //touch mode
+    {
+
+      disallowButtonPresses(); //Disable touch input
+      console.log("INFO: Tilt input enabled");
+
+    }
+    else if (mode === TOUCH_MODE) //tilt mode
+    {
+
+      allowButtonPresses(); //Enable touch input
+      console.log("INFO: Touch input enabled");
+
+    }
+     else //handle exceptions
+    {
+
+      console.log("ERROR: Input mode undefined");
+
+    }
+
+
 }
 
-// You may need to write toher functions.
+//Handles passing game information to the player
 function updateDisplay() {
+
+  //Let 'outputRefArea' be the output box on the app
   let outputRefArea = document.getElementById("output");
+
+  //Change 'outputRefArea' to display helpful information
   outputRefArea.innerHTML = "Button Presses Remaining: <strong>" + buttonPressesRemaining + "<strong/><br/>";
   outputRefArea.innerHTML += "Current Sequence Length: <strong>" + sequenceLength + "<strong/><br/>";
   outputRefArea.innerHTML += "Correct Sequences at Current Level: <strong>" + correctSequencesAtCurrent + "<strong/><br/>";
   outputRefArea.innerHTML += "Sequences from next level: <strong>" + (sequenceLength - correctSequencesAtCurrent - 2) + "<strong/><br/><br/>";
-  if (playingState === 2) {
+  outputRefArea.innerHTML += "beta = " + beta + "<br/>"
+  outputRefArea.innerHTML += "gamma = " + gamma + "<br/>"
+  //Direct the player to which state they are currently in
+
+  if (playingState === 2) //Sequence is about to display
+  {
+
     outputRefArea.innerHTML += "<strong><h5>Watch Current Sequence!<strong/><h5/>";
-  } else if (playingState === 3) {
-    outputRefArea.innerHTML += "<strong><h5>Enter the Sequence!<strong/><h5/>"
-  } else {
-    outputRefArea.innerHTML += "<strong><h5>Start a New Game!<strong/><h5/>"
+
+  } else if (playingState === 3) //Player has watched the sequence
+  {
+
+    outputRefArea.innerHTML += "<strong><h5>Enter the Sequence!<strong/><h5/>";
+
+  }
+  else  //Player has failed or not begun yet
+  {
+
+    outputRefArea.innerHTML += "<strong><h5>Start a New Game!<strong/><h5/>";
+
   }
 }
