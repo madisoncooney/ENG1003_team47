@@ -20,32 +20,39 @@ let timeBetweenSequences = 1000;
 let sequenceLength = 4;
 let sequence;
 let correctSequencesAtCurrent = 0;
-let beta, gamma, lastSelected;
+let beta, gamma, tiltSelection;
 let degreeThreshold = 5;
 
 //Function fires whenever eventlistener returns
 function orientationListener(event) {
   beta     = event.beta;
   gamma    = event.gamma;
-  /*if (controlMode === TILT_MODE && usersTurn === true)
+  if (controlMode === TILT_MODE && usersTurn === true)
   {
     if (gamma <= -degreeThreshold && beta <= -degreeThreshold)
     {
-      goLight(TLImg);
+      tiltSelection = "Blue";
     }
     else if (gamma >= degreeThreshold && beta <= -degreeThreshold)
     {
-      goLight(TRImg);
+      tiltSelection = "Green";
     }
     else if (gamma >= degreeThreshold && beta >= degreeThreshold)
     {
-      goLight(BRImg);
+      tiltSelection = "Red";
     }
     else if (gamma <= -degreeThreshold && beta >= degreeThreshold)
     {
-      goLight(BLImg);
+      tiltSelection = "Yellow";
     }
-  }*/
+    else
+      tiltSelection = "";
+  }
+  else
+  {
+    tiltSelection = "";
+  }
+  updateDisplay();
 }
 
 //Start event handler
@@ -262,8 +269,11 @@ function updateDisplay() {
   outputRefArea.innerHTML += "Current Sequence Length: <strong>" + sequenceLength + "<strong/><br/>";
   outputRefArea.innerHTML += "Correct Sequences at Current Level: <strong>" + correctSequencesAtCurrent + "<strong/><br/>";
   outputRefArea.innerHTML += "Sequences from next level: <strong>" + (sequenceLength - correctSequencesAtCurrent - 2) + "<strong/><br/><br/>";
-  outputRefArea.innerHTML += "beta = " + beta + "<br/>"
-  outputRefArea.innerHTML += "gamma = " + gamma + "<br/>"
+  if (controlMode === TILT_MODE)
+  {
+    outputRefArea.innerHTML += "Currently Selecting = <strong>" + tiltSelection + "<strong/><br/>";
+
+  }
   //Direct the player to which state they are currently in
 
   if (playingState === 2) //Sequence is about to display
