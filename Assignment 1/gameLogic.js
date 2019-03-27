@@ -16,35 +16,36 @@
 //Declare and define some variables...
 let userInputSequence = [];
 let failedLastSequence = false;
+let timeBetweenSequences = 1000;
 let sequenceLength = 4;
 let sequence;
 let correctSequencesAtCurrent = 0;
-let beta, gamma;
-let degreeThreshold = 10;
+let beta, gamma, lastSelected;
+let degreeThreshold = 5;
 
 //Function fires whenever eventlistener returns
 function orientationListener(event) {
   beta     = event.beta;
   gamma    = event.gamma;
-  if (controlMode === TILT_MODE && usersTurn === true)
+  /*if (controlMode === TILT_MODE && usersTurn === true)
   {
     if (gamma <= -degreeThreshold && beta <= -degreeThreshold)
     {
-      selectBlueButton();
+      goLight(TLImg);
     }
     else if (gamma >= degreeThreshold && beta <= -degreeThreshold)
     {
-      selectGreenButton();
+      goLight(TRImg);
     }
     else if (gamma >= degreeThreshold && beta >= degreeThreshold)
     {
-      selectRedButton();
+      goLight(BRImg);
     }
     else if (gamma <= -degreeThreshold && beta >= degreeThreshold)
     {
-      selectYellowButton();
+      goLight(BLImg);
     }
-  }
+  }*/
 }
 
 //Start event handler
@@ -68,12 +69,14 @@ function buttonSelected(whichButton)
 
           //
 
-          return runGameWithWait();;
+          setTimeout(runGame,timeBetweenSequences);
+          return;
         }
       }
       showSuccess();
       sequenceProgress('success');
-      return runGameWithWait();
+      setTimeout(runGame,timeBetweenSequences);
+      return;
     }
 
 }
@@ -165,8 +168,52 @@ function sequenceHasDisplayed()
 function userChoiceTimeout()
 {
     // Include your own code here
-    showFailure();
-    disallowButtonPresses();
+    if (controlMode === TILT_MODE)
+    {
+      if (gamma <= -degreeThreshold && beta <= -degreeThreshold)
+      {
+        selectTopLeftButton();
+        buttonPress("blue");
+      }
+      else if (gamma >= degreeThreshold && beta <= -degreeThreshold)
+      {
+        selectTopRightButton();
+        buttonPress("green");
+      }
+      else if (gamma >= degreeThreshold && beta >= degreeThreshold)
+      {
+        selectBottomRightButton();
+        buttonPress("red");
+      }
+      else if (gamma <= -degreeThreshold && beta >= degreeThreshold)
+      {
+        selectBottomLeftButton();
+        buttonPress("yellow");
+      }
+      else
+      {
+        showFailure();
+        sequenceProgress('failed');
+        sequenceProgress('failed');
+        return updateDisplay();
+      }
+
+      if (userInputSequence.length !== sequenceLength)
+      {
+        displayToastMessage("Next button!");
+      }
+      userMadeChoice = true;
+      return;
+    }
+    else
+    {
+      showFailure();
+      sequenceProgress('failed');
+      sequenceProgress('failed');
+      disallowButtonPresses();
+      updateDisplay()
+    }
+    return;
 }
 
 /*
