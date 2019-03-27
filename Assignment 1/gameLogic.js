@@ -154,8 +154,10 @@ function sequenceHasDisplayed()
 {
     updateDisplay(); //Update game information to players
     displayToastMessage("Enter the sequence."); //Prompt the user to play
-    allowButtonPresses(); //Enable user input
-
+    if (controlMode === TOUCH_MODE)
+    {
+      allowButtonPresses(); //Enable user input
+    }
 }
 
 /*
