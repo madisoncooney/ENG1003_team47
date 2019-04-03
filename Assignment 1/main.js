@@ -139,9 +139,11 @@ function scheduleGiveUp()
 
 function triggerUserChoiceTimeout()
 {
-    userChoiceTimeout();
-    if (userMadeChoice === false)
+    let res = userChoiceTimeout();
+    if (userMadeChoice === false && controlMode === TOUCH_MODE)
     {
+        usersTurn = false;
+        buttonPressesRemaining = 0;
         enterWaitState();
     }
     userMadeChoice = false;
@@ -190,6 +192,7 @@ function checkUserFinished()
     }
     else
     {
+    	usersTurn = true;
         scheduleGiveUp();
     }
 }
@@ -336,8 +339,9 @@ function selectBlueButton()
         buttonSelected("blue");
 
         // Restart it again from 2 seconds
-        checkUserFinished();
+        // 
         userMadeChoice = true;
+        checkUserFinished();
     }
 }
 
@@ -351,8 +355,8 @@ function selectGreenButton()
         cancelGiveUp();
         goLight(TRImg);
         buttonSelected("green");
-        checkUserFinished();
         userMadeChoice = true;
+        checkUserFinished();
     }
 }
 function selectYellowButton()
@@ -365,8 +369,8 @@ function selectYellowButton()
         cancelGiveUp();
         goLight(BLImg);
         buttonSelected("yellow");
-        checkUserFinished();
         userMadeChoice = true;
+        checkUserFinished();
     }
 }
 
@@ -380,8 +384,8 @@ function selectRedButton()
         cancelGiveUp();
         goLight(BRImg);
         buttonSelected("red");
-        checkUserFinished();
         userMadeChoice = true;
+        checkUserFinished();
     }
 }
 
