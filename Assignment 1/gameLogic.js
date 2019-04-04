@@ -317,7 +317,7 @@ function absoluteOrientationListener(event)
 //Function that handles what button is selected without needing input
 function tiltSelection()
 {
-  if (true)//controlMode === TILT_MODE && usersTurn === true)
+  if (controlMode === TILT_MODE && usersTurn === true)
   {
     if (gamma >= degreeThreshold && beta >= degreeThreshold)
     {
