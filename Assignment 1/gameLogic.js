@@ -1,21 +1,33 @@
 "use strict";
 
-//Declare and define some variables...
+//OUTPUT BOX
+//
 //Let 'outputRefArea' be the output box on the app
 let outputRefArea = document.getElementById("output");
+
+//Make the output box prettier
 outputRefArea.style.width = "90%";
 outputRefArea.style["padding"] = "5%";
 outputRefArea.style["text-align"] = 'center';
-let userInputSequence = [];
-let failedLastSequence = false;
-let timeBetweenSequences = 1000;
-let sequenceLength = 4;
-let sequence;
-let correctSequencesAtCurrent = 0;
-let beta, gamma, quat0, quat1, quat2, quat3, tiltSelected;
-let degreeThreshold = 7.5;
+//
+// END OUTPUT BOX
 
-//Code from SensorTest App
+//DEFINE GLOBAL VARIABLES
+//
+let userInputSequence = []; // Sequence as input by the player
+let failedLastSequence = false; //Check whether last sequence was failed, used for two-strikes fail system
+let timeBetweenSequences = 1000; //Time between sequences, ms
+let sequenceLength = 4; //Current sequence length
+let sequence; //Tracks current sequence
+let correctSequencesAtCurrent = 0; //Tracks # of correct sequences
+let beta, gamma, quat0, quat1, quat2, quat3, tiltSelected; //Define tilt related variables
+let degreeThreshold = 7.5; //Define deadzone for tilt
+//
+//END GLOBAL VARIABLES
+
+//SENSOR TEST CODE
+//
+//
 // Start: code for device orientation
 outputRefArea.innerHTML = "<h3 style='margin:8px'>Welcome to Simon</h3><h5 style='margin:8px'>Press the play button to begin!</h5>";
 let deviceAbsolute = null;
@@ -40,160 +52,20 @@ deviceAbsolute.addEventListener('reading', () => absoluteOrientationListener(dev
 
 //start the sensor
 deviceAbsolute.start();
+//
+//
+// END SENSOR TEST CODE
 
 
+//
+//  SEQUENCE RETURN AND USER INPUT CHECKING FUNCTIONS
+//
 
-
-
-//Function fires whenever eventlistener returns
-
-function absoluteOrientationListener(event) {
-  let radianToDegrees = 180/Math.PI;
-  //normalize quaternion (as from: https://www.cprogramming.com/tutorial/3d/quaternions.html)
-  let magnitude = Math.sqrt((event.quaternion[0]**2) + (event.quaternion[1]**2) + (event.quaternion[2]**2) + (event.quaternion[3]**2));
-  quat0 = event.quaternion[0]/magnitude;
-  quat1 = event.quaternion[1]/magnitude;
-  quat2 = event.quaternion[2]/magnitude;
-  quat3 = event.quaternion[3]/magnitude;
-  // let heading = 180*Math.atan2(2*quatY*quatW - 2*quatX*quatZ, 1 - 2*(quatY**2) - 2*(quatZ**2))/Math.PI;
-  // let altitude = 180*Math.asin(2*quatX*quatY + 2*quatZ*quatW)/Math.PI;
-  // let bank = 180*Math.atan2(2*quatX*quatW - 2*quatY*quatZ, 1- 2*(quatX**2) - 2*(quatZ**2))/Math.PI;
-  // https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
-  let roll = Math.atan2(2 * (quat3*quat2 + quat0*quat1),1 - 2*(quat1*quat1 + quat2*quat2));
-  let pitch = Math.asin(2 * (quat2*quat0 - quat3 * quat1));
-  let yaw = Math.atan2(2 * (quat3*quat0 + quat1*quat2), -1 + 2*(quat0*quat0 + quat1*quat1));
-  //
-  // heading = checkValue(heading);
-  // altitude = Math.PI * checkValue(altitude)/180;
-  // bank = checkValue(bank);
-  // alpha = heading;
-  // beta = Math.sin(altitude)*bank + Math.cos(altitude)*heading;
-  // gamma = Math.cos(altitude)*heading - Math.sin(altitude)*bank;
-  beta = checkValue(radianToDegrees*pitch);
-  gamma = checkValue(radianToDegrees*yaw);
-  /*if (quatX*quatY + quatZ*quatW === 0.5)
-  {
-    heading = 2*Math.atan2(quatX,quatW);
-    bank = 0;
-  }
-  else if (quatX*quatY + quatZ*quatW === -0.5)
-  {
-    heading = -2*Math.atan2(quatX,quatW);
-    bank = 0;
-  }*/
-  function checkValue(value) {
-    if (value > 90)
-    {
-      value -= 180;
-    }
-    else if (value < -90)
-    {
-      value += 180;
-    }
-    return value;
-  }
-  //outputRefArea.innerHTML = beta + "<br/>" + gamma + "<br/>";
-  tiltSelection();
-}
-
-
-function tiltSelection()
+//Handles user input and aborts the player input state if they get the sequence wrong at any point
+function sequenceProgress(result)
 {
-  if (true)//controlMode === TILT_MODE && usersTurn === true)
-  {
-    if (gamma >= degreeThreshold && beta >= degreeThreshold)
+    if (result === 'failed')
     {
-    	tiltSelected = "blue";
-			tiltButtonSelect(TLImg);
-      return;
-    }
-    else if (gamma >= degreeThreshold && beta <= -degreeThreshold)
-    {
-			tiltSelected = "green";
-			tiltButtonSelect(TRImg);
-      return;
-    }
-    else if (gamma <= -degreeThreshold && beta <= -degreeThreshold)
-    {
-			tiltSelected = "red";
-			tiltButtonSelect(BRImg);
-      return;
-    }
-    else if (gamma <= -degreeThreshold && beta >= degreeThreshold)
-    {
-			tiltSelected = "yellow";
-			tiltButtonSelect(BLImg);
-      return;
-    }
-  }
-	else
-	{
-		tiltButtonSelect();
-	}
-  // if not already returned, make sure none are selected
-}
-
-
-function tiltButtonSelect(feedbackButton)
-{
-	let buttons = [TLImg,TRImg,BRImg,BLImg];
-	for (let selection in buttons)
-	{
-		if (selection === feedbackButton)
-		{
-			solid.style.borderStyle = "solid";
-		}
-		else
-		{
-			selection.style.borderStyle = "none";
-		}
-	}
-}
-
-/*
- * This callback function will be called when any of the game buttons on the
- * screen is clicked on by the user (note that the user will not be able to
- * 'double-click' buttons, they will only be clickable once a button has
- * gone dark again)
- *
- * This function has a single parameter 'whichButton' that can take the
- * following values:
- *    "blue"
- *    "green"
- *    "yellow"
- *     "red"
-*/
-function buttonSelected(whichButton)
-{
-    // Include your own code here
-    userInputSequence.push(whichButton);
-    updateDisplay();
-    if (userInputSequence.length === sequenceLength)
-    {
-      console.log(userInputSequence);
-      for (let j = 0; j < sequenceLength; j++)
-      {
-        if (userInputSequence[j] !== sequence[j])
-        {
-          showFailure();
-          sequenceProgress('failed');
-
-          //
-
-          setTimeout(runGame,timeBetweenSequences);
-          return;
-        }
-      }
-      showSuccess();
-      sequenceProgress('success');
-      setTimeout(runGame,timeBetweenSequences);
-      return;
-    }
-
-}
-
-function sequenceProgress(result) {
-    if (result === 'failed') {
       if (failedLastSequence === true) {
         sequenceLength = 4;
         correctSequencesAtCurrent = 0;
@@ -207,13 +79,16 @@ function sequenceProgress(result) {
         correctSequencesAtCurrent = 0;
       }
     }
-    else {
-      if (correctSequencesAtCurrent + 1 === sequenceLength - 2) {
+    else
+    {
+      if (correctSequencesAtCurrent + 1 === sequenceLength - 2)
+      {
         sequenceLength++;
         correctSequencesAtCurrent = 0;
         failedLastSequence = false;
       }
-      else {
+      else
+      {
         correctSequencesAtCurrent++;
         failedLastSequence = false;
       }
@@ -230,7 +105,6 @@ function sequenceProgress(result) {
  *    "yellow"
  *    "red"
 */
-
 function giveNextSequence()
 {
     updateDisplay();
@@ -313,6 +187,11 @@ function userChoiceTimeout()
     return;
 }
 
+
+//
+//  SETTINGS AND UI-QoL FUNCTIONS
+//
+
 /*
  * This callback function will be called when the user taps the button at the
  * top-right of the title bar to toggle between touch- and tilt-based input.
@@ -377,4 +256,156 @@ function updateDisplay() {
     outputRefArea.innerHTML += "<strong><h5>Start a New Game!<strong/><h5/>";
 
   }
+}
+
+
+//
+//  TILT INPUT FUNCTIONS
+//
+
+//Function fires whenever eventlistener returns
+function absoluteOrientationListener(event)
+{
+  let radianToDegrees = 180/Math.PI;
+  //normalize quaternion (as from: https://www.cprogramming.com/tutorial/3d/quaternions.html)
+  let magnitude = Math.sqrt((event.quaternion[0]**2) + (event.quaternion[1]**2) + (event.quaternion[2]**2) + (event.quaternion[3]**2));
+  quat0 = event.quaternion[0]/magnitude;
+  quat1 = event.quaternion[1]/magnitude;
+  quat2 = event.quaternion[2]/magnitude;
+  quat3 = event.quaternion[3]/magnitude;
+  // let heading = 180*Math.atan2(2*quatY*quatW - 2*quatX*quatZ, 1 - 2*(quatY**2) - 2*(quatZ**2))/Math.PI;
+  // let altitude = 180*Math.asin(2*quatX*quatY + 2*quatZ*quatW)/Math.PI;
+  // let bank = 180*Math.atan2(2*quatX*quatW - 2*quatY*quatZ, 1- 2*(quatX**2) - 2*(quatZ**2))/Math.PI;
+  // https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
+  let roll = Math.atan2(2 * (quat3*quat2 + quat0*quat1),1 - 2*(quat1*quat1 + quat2*quat2));
+  let pitch = Math.asin(2 * (quat2*quat0 - quat3 * quat1));
+  let yaw = Math.atan2(2 * (quat3*quat0 + quat1*quat2), -1 + 2*(quat0*quat0 + quat1*quat1));
+  //
+  // heading = checkValue(heading);
+  // altitude = Math.PI * checkValue(altitude)/180;
+  // bank = checkValue(bank);
+  // alpha = heading;
+  // beta = Math.sin(altitude)*bank + Math.cos(altitude)*heading;
+  // gamma = Math.cos(altitude)*heading - Math.sin(altitude)*bank;
+  beta = checkValue(radianToDegrees*pitch);
+  gamma = checkValue(radianToDegrees*yaw);
+  /*if (quatX*quatY + quatZ*quatW === 0.5)
+  {
+    heading = 2*Math.atan2(quatX,quatW);
+    bank = 0;
+  }
+  else if (quatX*quatY + quatZ*quatW === -0.5)
+  {
+    heading = -2*Math.atan2(quatX,quatW);
+    bank = 0;
+  }*/
+  function checkValue(value) {
+    if (value > 90)
+    {
+      value -= 180;
+    }
+    else if (value < -90)
+    {
+      value += 180;
+    }
+    return value;
+  }
+  //outputRefArea.innerHTML = beta + "<br/>" + gamma + "<br/>";
+  tiltSelection();
+}
+
+//Function that handles what button is selected without needing input
+function tiltSelection()
+{
+  if (true)//controlMode === TILT_MODE && usersTurn === true)
+  {
+    if (gamma >= degreeThreshold && beta >= degreeThreshold)
+    {
+    	tiltSelected = "blue";
+			tiltButtonSelect(TLImg);
+      return;
+    }
+    else if (gamma >= degreeThreshold && beta <= -degreeThreshold)
+    {
+			tiltSelected = "green";
+			tiltButtonSelect(TRImg);
+      return;
+    }
+    else if (gamma <= -degreeThreshold && beta <= -degreeThreshold)
+    {
+			tiltSelected = "red";
+			tiltButtonSelect(BRImg);
+      return;
+    }
+    else if (gamma <= -degreeThreshold && beta >= degreeThreshold)
+    {
+			tiltSelected = "yellow";
+			tiltButtonSelect(BLImg);
+      return;
+    }
+  }
+	else
+	{
+		tiltButtonSelect();
+	}
+  // if not already returned, make sure none are selected
+}
+
+//Adds a thin black border to the buttons as a style to indicate when a button is selected in tilt mode.
+function tiltButtonSelect(feedbackButton)
+{
+	let buttons = [TLImg,TRImg,BRImg,BLImg];
+	for (let selection in buttons)
+	{
+		if (selection === feedbackButton)
+		{
+			solid.style.borderStyle = "solid";
+		}
+		else
+		{
+			selection.style.borderStyle = "none";
+		}
+	}
+}
+
+/*
+ * This callback function will be called when any of the game buttons on the
+ * screen is clicked on by the user (note that the user will not be able to
+ * 'double-click' buttons, they will only be clickable once a button has
+ * gone dark again)
+ *
+ * This function has a single parameter 'whichButton' that can take the
+ * following values:
+ *    "blue"
+ *    "green"
+ *    "yellow"
+ *     "red"
+*/
+function buttonSelected(whichButton)
+{
+    // Include your own code here
+    userInputSequence.push(whichButton);
+    updateDisplay();
+    if (userInputSequence.length === sequenceLength)
+    {
+      console.log(userInputSequence);
+      for (let j = 0; j < sequenceLength; j++)
+      {
+        if (userInputSequence[j] !== sequence[j])
+        {
+          showFailure();
+          sequenceProgress('failed');
+
+          //
+
+          setTimeout(runGame,timeBetweenSequences);
+          return;
+        }
+      }
+      showSuccess();
+      sequenceProgress('success');
+      setTimeout(runGame,timeBetweenSequences);
+      return;
+    }
+
 }
