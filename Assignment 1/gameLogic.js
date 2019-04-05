@@ -36,8 +36,6 @@ let tiltSelected;
 //
 //END GLOBAL VARIABLES
 
-=======
-
 //Default output
 outputRefArea.innerHTML = "<h3 style='margin:8px'>Welcome to Simon</h3><h5 style='margin:8px'>Press the play button to begin!</h5>";
 
