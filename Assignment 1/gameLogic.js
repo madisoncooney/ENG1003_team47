@@ -36,26 +36,7 @@ let tiltSelected;
 //
 //END GLOBAL VARIABLES
 
-//Default output
-outputRefArea.innerHTML = "<h3 style='margin:8px'>Welcome to Simon</h3><h5 style='margin:8px'>Press the play button to begin!</h5>";
 
-//
-// END OUTPUT BOX
-
-//DEFINE GLOBAL VARIABLES
-//
-let userInputSequence = []; // Sequence as input by the player
-let failedLastSequence = false; //Check whether last sequence was failed, used for two-strikes fail system
-let timeBetweenSequences = 1000; //Time between sequences, ms
-let sequenceLength = 4; //Current sequence length
-let sequence; //Tracks current sequence
-let correctSequencesAtCurrent = 0; //Tracks # of correct sequences
-let beta, gamma, quat0, quat1, quat2, quat3, tiltSelected; //Define tilt related variables
-let degreeThreshold = 7.5; //Define deadzone for tilt
-//
-//END GLOBAL VARIABLES
-
->>>>>>> master
 ///////////////////////////////////////////////////
 // Code from SensorTest App
 ///////////////////////////////////////////////////
