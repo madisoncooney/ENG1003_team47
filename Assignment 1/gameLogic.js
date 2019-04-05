@@ -352,7 +352,6 @@ function absoluteOrientationListener(event) {
 	let quat1 = event.quaternion[1]/magnitude;
 	let quat2 = event.quaternion[2]/magnitude;
 	let quat3 = event.quaternion[3]/magnitude;
-<<<<<<< HEAD
 
 
 	// use DJI algorithm to convert quaternions to euler angles relative to
@@ -474,7 +473,6 @@ function tiltButtonSelect(feedbackButton)
 */
 function buttonSelected(whichButton)
 {
-	// Include your own code here
 	let timeBetweenSequences = 1000;
 
 	userInputSequence.push(whichButton);
@@ -488,144 +486,125 @@ function buttonSelected(whichButton)
 				showFailure();
 				sequenceProgress('failed');
 
-=======
-
-
-	// use DJI algorithm to convert quaternions to euler angles relative to
-	// device orientation. Found derivation of equations here:
-	// (https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion)
-	let pitch = Math.asin(2 * (quat2*quat0 - quat3 * quat1));
-	let yaw = Math.atan2(2 * (quat3*quat0 + quat1*quat2), -1 + 2*(quat0*quat0 + quat1*quat1));
-
-	let beta = checkValue(radianToDegrees*pitch); // devices took pitch as the beta angle
-	let gamma = checkValue(radianToDegrees*yaw); // devices took yaw as beta angle
-
-	// function to convert all values to lie within -90 -> 90 degrees
-	function checkValue(value) {
-		if (value > 90)
-		{
-			value -= 180;
-		}
-		else if (value < -90)
-		{
-			value += 180;
-		}
-		return value;
-	}
-
-	// call the tilt selection function to use gamma and beta to determine orientation
-	tiltSelection(beta, gamma);
-}
-
-//Function that handles what button is selected without needing input
-function tiltSelection(beta, gamma)
-{
-	let degreeThreshold = 7.5;
-	// check if a valid situation for tilt selection to occur
-	if (controlMode === TILT_MODE && usersTurn === true)
-	{
-		// check beta and gamma values and assign colours if requirements met
-		if (gamma >= degreeThreshold && beta >= degreeThreshold)
-		{
-			tiltSelected = "blue";
-		}
-		else if (gamma >= degreeThreshold && beta <= -degreeThreshold)
-		{
-			tiltSelected = "green";
-		}
-		else if (gamma <= -degreeThreshold && beta <= -degreeThreshold)
-		{
-			tiltSelected = "red";
-		}
-		else if (gamma <= -degreeThreshold && beta >= degreeThreshold)
-		{
-			tiltSelected = "yellow";
-		}
-
-		// call function to display tilt selection
-		tiltButtonSelect(tiltSelected);
-		return;
-	}
-	else
-	{
-		tiltButtonSelect(undefined);
-	}
-	// if not already returned, make sure none are selected
-}
-
-//Adds a thin black border to the buttons as a style to indicate when a button is selected in tilt mode.
-function tiltButtonSelect(feedbackButton)
-{
-	if (feedbackButton === undefined)
-	{
-		TLImg.style.borderStyle = "none";
-		TRImg.style.borderStyle = "none";
-		BRImg.style.borderStyle = "none";
-		BLImg.style.borderStyle = "none";
-		return;
-	}
-	if (feedbackButton === "blue")
-	{
-		TLImg.style.borderStyle="solid";
-		TRImg.style.borderStyle="none";
-		BRImg.style.borderStyle="none";
-		BLImg.style.borderStyle="none";
-	}
-	else if (feedbackButton === "green")
-	{
-		TRImg.style.borderStyle="solid";
-		TLImg.style.borderStyle="none";
-		BRImg.style.borderStyle="none";
-		BLImg.style.borderStyle="none";
-	}
-	else if (feedbackButton === "red")
-	{
-		BRImg.style.borderStyle="solid";
-		TRImg.style.borderStyle="none";
-		TLImg.style.borderStyle="none";
-		BLImg.style.borderStyle="none";
-	}
-	else if (feedbackButton === "yellow")
-	{
-		BLImg.style.borderStyle="solid";
-		TRImg.style.borderStyle="none";
-		BRImg.style.borderStyle="none";
-		TLImg.style.borderStyle="none";
-	}
-	return;
-}
-
-/*
- * This callback function will be called when any of the game buttons on the
- * screen is clicked on by the user (note that the user will not be able to
- * 'double-click' buttons, they will only be clickable once a button has
- * gone dark again)
- *
- * This function has a single parameter 'whichButton' that can take the
- * following values:
- *    "blue"
- *    "green"
- *    "yellow"
- *     "red"
-*/
-function buttonSelected(whichButton)
-{
-	// Include your own code here
-	let timeBetweenSequences = 1000;
-
-	userInputSequence.push(whichButton);
-	updateDisplay(STATE_USER);
-	if (userInputSequence.length === sequenceLength)
-	{
-		for (let j = 0; j < sequenceLength; j++)
-		{
-			if (userInputSequence[j] !== sequence[j])
-			{
-				showFailure();
-				sequenceProgress('failed');
-
->>>>>>> master
 				//
+				setTimeout(runGame,timeBetweenSequences);
+				return;
+			}
+		}
+		showSuccess();
+		sequenceProgress('success');
+		updateDisplay(STATE_WATCH);
+		setTimeout(runGame,timeBetweenSequences);
+		return;
+	}
+}
+
+//Function that handles what button is selected without needing input
+function tiltSelection(beta, gamma)
+{
+	let degreeThreshold = 7.5;
+	// check if a valid situation for tilt selection to occur
+	if (controlMode === TILT_MODE && usersTurn === true)
+	{
+		// check beta and gamma values and assign colours if requirements met
+		if (gamma >= degreeThreshold && beta >= degreeThreshold)
+		{
+			tiltSelected = "blue";
+		}
+		else if (gamma >= degreeThreshold && beta <= -degreeThreshold)
+		{
+			tiltSelected = "green";
+		}
+		else if (gamma <= -degreeThreshold && beta <= -degreeThreshold)
+		{
+			tiltSelected = "red";
+		}
+		else if (gamma <= -degreeThreshold && beta >= degreeThreshold)
+		{
+			tiltSelected = "yellow";
+		}
+
+		// call function to display tilt selection
+		tiltButtonSelect(tiltSelected);
+		return;
+	}
+	else
+	{
+		tiltButtonSelect(undefined);
+	}
+	// if not already returned, make sure none are selected
+}
+
+//Adds a thin black border to the buttons as a style to indicate when a button is selected in tilt mode.
+function tiltButtonSelect(feedbackButton)
+{
+	if (feedbackButton === undefined)
+	{
+		TLImg.style.borderStyle = "none";
+		TRImg.style.borderStyle = "none";
+		BRImg.style.borderStyle = "none";
+		BLImg.style.borderStyle = "none";
+		return;
+	}
+	if (feedbackButton === "blue")
+	{
+		TLImg.style.borderStyle="solid";
+		TRImg.style.borderStyle="none";
+		BRImg.style.borderStyle="none";
+		BLImg.style.borderStyle="none";
+	}
+	else if (feedbackButton === "green")
+	{
+		TRImg.style.borderStyle="solid";
+		TLImg.style.borderStyle="none";
+		BRImg.style.borderStyle="none";
+		BLImg.style.borderStyle="none";
+	}
+	else if (feedbackButton === "red")
+	{
+		BRImg.style.borderStyle="solid";
+		TRImg.style.borderStyle="none";
+		TLImg.style.borderStyle="none";
+		BLImg.style.borderStyle="none";
+	}
+	else if (feedbackButton === "yellow")
+	{
+		BLImg.style.borderStyle="solid";
+		TRImg.style.borderStyle="none";
+		BRImg.style.borderStyle="none";
+		TLImg.style.borderStyle="none";
+	}
+	return;
+}
+
+/*
+ * This callback function will be called when any of the game buttons on the
+ * screen is clicked on by the user (note that the user will not be able to
+ * 'double-click' buttons, they will only be clickable once a button has
+ * gone dark again)
+ *
+ * This function has a single parameter 'whichButton' that can take the
+ * following values:
+ *    "blue"
+ *    "green"
+ *    "yellow"
+ *     "red"
+*/
+function buttonSelected(whichButton)
+{
+	// Include your own code here
+	let timeBetweenSequences = 1000;
+
+	userInputSequence.push(whichButton);
+	updateDisplay(STATE_USER);
+	if (userInputSequence.length === sequenceLength)
+	{
+		for (let j = 0; j < sequenceLength; j++)
+		{
+			if (userInputSequence[j] !== sequence[j])
+			{
+				showFailure();
+				sequenceProgress('failed');
 				setTimeout(runGame,timeBetweenSequences);
 				return;
 			}
