@@ -203,7 +203,7 @@ function sequenceHasDisplayed()
 	}
 }
 
-/*
+/* 
  * This callback function will be called if the user takes too long to make
  * a choice.  You can generally treat a call to this function as meaning the
  * user has 'given up'. This should be counted as an incorrect sequence given
@@ -222,7 +222,8 @@ function userChoiceTimeout()
 	// if in tilt mode
 	if (controlMode === TILT_MODE)
 	{
-		if (tiltSelected === undefined)
+		//user hasn't selected anything and time has run out
+		if (tiltSelected === undefined) 
 		{
 			showFailure();
 			sequenceProgress('failed');
@@ -231,10 +232,12 @@ function userChoiceTimeout()
 			usersTurn = false;
 			return updateDisplay(STATE_WAIT);
 		}
-
-		// Select the stored selected value and then change it back to undefined.
-		allowButtonPresses(); //to temporarily allow a bug in main.js to allow button selection to complete
+		
+		//to temporarily allow a bug in main.js to allow button selection to complete
+		allowButtonPresses(); 
+		//Calls the buttonPress function with the appropriate button choice
 		buttonPress(tiltSelected);
+		//Ensure user can't enter more buttons while the program processes previous
 		disallowButtonPresses();
 		tiltSelected = undefined;
 
@@ -248,6 +251,8 @@ function userChoiceTimeout()
 	}
 	else
 	{
+		//User has not made choice, show the cross and update variables before 
+		//restarting
 		showFailure();
 		sequenceProgress('failed');
 		sequenceProgress('failed');
@@ -334,8 +339,10 @@ function updateDisplay(passedState)
  * absoluteOrientationListener
  *
  * Function fires whenever the deviceAbsolute event listener
- * recieves new data from the sensor.
- * function converts quaterions to beta and gamma
+ * recieves new data from the sensor. It takes quarternions 
+ * provided by the API and converts it into the two angles 
+ * beta and gamma that can be used to select approporiate 
+ * buttons from the visual interface.
  */
 function absoluteOrientationListener(event) {
 	let radianToDegrees = 180/Math.PI;
@@ -380,7 +387,12 @@ function absoluteOrientationListener(event) {
 	tiltSelection(beta, gamma);
 }
 
-//Function that handles what button is selected without needing input
+/*
+* Given the angle parameters beta and gamma, this function determines what quadrant 
+* of the UI the user is trying to select. It then calls the function tiltButtonSelect 
+* to provide the user visual cues (in the form of a black outline around the button)
+* which button is about to be selected.
+*/
 function tiltSelection(beta, gamma)
 {
 	let degreeThreshold = 7.5;
@@ -410,13 +422,17 @@ function tiltSelection(beta, gamma)
 		return;
 	}
 	else
-	{
+	{	
+		// if not already returned, make sure none are selected
 		tiltButtonSelect(undefined);
 	}
-	// if not already returned, make sure none are selected
+	
 }
 
-//Adds a thin black border to the buttons as a style to indicate when a button is selected in tilt mode.
+/* tiltButtonSelect
+* Shows the user which button is about to be selected by adding a 
+* thin black line around it, using the id of the individual buttons
+*/
 function tiltButtonSelect(feedbackButton)
 {
 	if (feedbackButton === undefined)
@@ -474,23 +490,28 @@ function tiltButtonSelect(feedbackButton)
 function buttonSelected(whichButton)
 {
 	let timeBetweenSequences = 1000;
-
+	//The selected button is appended to a list representing the 
+	//selections that the user has made.
 	userInputSequence.push(whichButton);
 	updateDisplay(STATE_USER);
 	if (userInputSequence.length === sequenceLength)
 	{
 		for (let j = 0; j < sequenceLength; j++)
 		{
+			//User has entered wrong sequence
 			if (userInputSequence[j] !== sequence[j])
 			{
+				//Displaying the cross mark
 				showFailure();
+				//sequenceProgress is called to update 
+				//variables before next round
 				sequenceProgress('failed');
-
-				//
+				//Wait for some time before restarting
 				setTimeout(runGame,timeBetweenSequences);
 				return;
 			}
 		}
+		//User has entered correct sequence
 		showSuccess();
 		sequenceProgress('success');
 		updateDisplay(STATE_WATCH);
@@ -499,7 +520,12 @@ function buttonSelected(whichButton)
 	}
 }
 
-//Function that handles what button is selected without needing input
+/* tiltSelection
+ * This function selects the appropriate button of the visual interface according 
+ * to the given values of beta and gamma (the angles derived from the sensor 
+ * API). 
+*/
+
 function tiltSelection(beta, gamma)
 {
 	let degreeThreshold = 7.5;
@@ -535,7 +561,11 @@ function tiltSelection(beta, gamma)
 	// if not already returned, make sure none are selected
 }
 
-//Adds a thin black border to the buttons as a style to indicate when a button is selected in tilt mode.
+/* tiltButtonSelect
+ * This function displays a black box around the button 
+ * that is about to be selected. It is called from within
+ * the tiltSelection function.
+*/
 function tiltButtonSelect(feedbackButton)
 {
 	if (feedbackButton === undefined)
@@ -577,7 +607,7 @@ function tiltButtonSelect(feedbackButton)
 	return;
 }
 
-/*
+/* buttonSelected
  * This callback function will be called when any of the game buttons on the
  * screen is clicked on by the user (note that the user will not be able to
  * 'double-click' buttons, they will only be clickable once a button has
@@ -592,23 +622,30 @@ function tiltButtonSelect(feedbackButton)
 */
 function buttonSelected(whichButton)
 {
-	// Include your own code here
 	let timeBetweenSequences = 1000;
-
+	//Below line appends the new selections to a list that keeps track of 
+	//the sequence given by the user
 	userInputSequence.push(whichButton);
 	updateDisplay(STATE_USER);
+	//Checking the sequence once a sequence of correct length has been 
+	//entered
 	if (userInputSequence.length === sequenceLength)
 	{
 		for (let j = 0; j < sequenceLength; j++)
 		{
+			//If the two sequences aren't identical, perform the
+			//steps to show the user has failed and restart (or 
+			//revert to lower level)
 			if (userInputSequence[j] !== sequence[j])
 			{
 				showFailure();
 				sequenceProgress('failed');
 				setTimeout(runGame,timeBetweenSequences);
-				return;
+				return; 
 			}
 		}
+		//If user has entered correct sequence, display appropriate 
+		//effects and start the next sequence (after some time)
 		showSuccess();
 		sequenceProgress('success');
 		updateDisplay(STATE_WATCH);
