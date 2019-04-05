@@ -1,24 +1,40 @@
+///////////////////////////////////////////////////
+// GameLogic showFailure
+///////////////////////////////////////////////////
+
+/*
+ *Created by: James Sandison, Madison Cooney, Alasdair MacKenzie and Nidhin Benny
+ *Last modified on 05/04/2019
+*/
+
 "use strict";
 
-// Declare and define required global variables
-let userInputSequence = [];
-let failedLastSequence = false;
-let sequenceLength = 4;
-let sequence;
-let correctSequencesAtCurrent = 0;
-let tiltSelected;
+//OUTPUT BOX
+//
 
-
-// Let 'outputRefArea' be the output box on the app
-// Format the initial screen to give instructions
+//Let 'outputRefArea' be the output box on the app
 let outputRefArea = document.getElementById("output");
+
+//Make the output box prettier
 outputRefArea.style.width = "90%";
 outputRefArea.style["padding"] = "5%";
 outputRefArea.style["text-align"] = 'center';
+
+//Default output
 outputRefArea.innerHTML = "<h3 style='margin:8px'>Welcome to Simon</h3><h5 style='margin:8px'>Press the play button to begin!</h5>";
 
+//
+// END OUTPUT BOX
 
-
+//DEFINE GLOBAL VARIABLES
+let userInputSequence = []; // Sequence as input by the player
+let failedLastSequence = false; // Check whether last sequence was failed, used for two-strikes fail system
+let sequenceLength = 4; // Current sequence length
+let sequence; // Tracks current sequence
+let correctSequencesAtCurrent = 0; //Tracks # of correct sequences
+let tiltSelected;
+//
+//END GLOBAL VARIABLES
 
 ///////////////////////////////////////////////////
 // Code from SensorTest App
@@ -102,13 +118,224 @@ outputRefArea.innerHTML = "<h3 style='margin:8px'>Welcome to Simon</h3><h5 style
 ////////////////////////////////////////
 
 
+//
+//  SEQUENCE RETURN AND USER INPUT CHECKING FUNCTIONS
+//
+
+/*
+ * sequenceProgress
+ *
+ * This callback function handles processing user input and aborts the play state if an input is incorrect
+ * It is called by UserChoiceTimeout
+*/
+function sequenceProgress(result)
+{
+	if (result === 'failed') {
+		if (failedLastSequence === true) {
+			sequenceLength = 4;
+			correctSequencesAtCurrent = 0;
+		}
+		else if (sequenceLength > 4) {
+			sequenceLength--;
+			correctSequencesAtCurrent = 0;
+		}
+		else {
+			sequenceLength = 4;
+			correctSequencesAtCurrent = 0;
+		}
+		failedLastSequence = true;
+	}
+	else {
+		if (correctSequencesAtCurrent + 1 === sequenceLength - 2) {
+			sequenceLength++;
+			correctSequencesAtCurrent = 0;
+			failedLastSequence = false;
+		}
+		else {
+			correctSequencesAtCurrent++;
+			failedLastSequence = false;
+		}
+	}
+	return;
+}
+
+/*
+ * giveNextSequence
+ *
+ * This callback function will be called regularly by the main.js page.
+ * It is called when it is time for a new sequence to display to the user.
+ * You should return a list of strings, from the following possible strings:
+ *    "blue"
+ *    "green"
+ *    "yellow"
+ *    "red"
+*/
+function giveNextSequence()
+{
+	updateDisplay(STATE_WATCH);
+	let colours = ["blue","green","yellow","red"];
+	let colourIndex;
+	sequence = [];
+	for (let i = 0; i < sequenceLength; i++)
+	{
+		colourIndex = Math.ceil(Math.random()*4) - 1;
+		sequence.push(colours[colourIndex]);
+	}
+
+	// return statement
+	userInputSequence = [];
+	updateDisplay(STATE_WATCH);
+	return sequence;
+}
+
+/*
+ * This callback function is called when the sequence to display to the user
+ * has finished displaying and user is now able to click buttons again.
+*/
+function sequenceHasDisplayed()
+{
+	updateDisplay(STATE_USER); //Update game information to players
+	displayToastMessage("Enter the sequence."); //Prompt the user to play
+	if (controlMode === TOUCH_MODE)
+	{
+		allowButtonPresses(); //Enable user input
+	}
+}
+
+/*
+ * This callback function will be called if the user takes too long to make
+ * a choice.  You can generally treat a call to this function as meaning the
+ * user has 'given up'. This should be counted as an incorrect sequence given
+ * by the user.
+ *
+ * When the app is is "tilt" input mode (see Step 7) then you might instead
+ * use this function to select the button that the phone is tilted towards,
+ * by calling one of the following functions:
+ *    selectYellowButton
+ *    selectRedButton
+ *    selectBlueButton
+ *    selectGreenButton
+*/
+function userChoiceTimeout()
+{
+	// if in tilt mode
+	if (controlMode === TILT_MODE)
+	{
+		if (tiltSelected === undefined)
+		{
+			showFailure();
+			sequenceProgress('failed');
+			sequenceProgress('failed');
+			enterWaitState();
+			usersTurn = false;
+			return updateDisplay(STATE_WAIT);
+		}
+
+		// Select the stored selected value and then change it back to undefined.
+		allowButtonPresses(); //to temporarily allow a bug in main.js to allow button selection to complete
+		buttonPress(tiltSelected);
+		disallowButtonPresses();
+		tiltSelected = undefined;
+
+		if (userInputSequence.length !== sequenceLength)
+		{
+			displayToastMessage("Next button!");
+		}
+		userMadeChoice = true;
+
+		return;
+	}
+	else
+	{
+		showFailure();
+		sequenceProgress('failed');
+		sequenceProgress('failed');
+		disallowButtonPresses();
+		updateDisplay(STATE_WAIT);
+	}
+	return;
+}
 
 
+//
+//  SETTINGS AND UI-QoL FUNCTIONS
+//
+
+/*
+ * This callback function will be called when the user taps the button at the
+ * top-right of the title bar to toggle between touch- and tilt-based input.
+ *
+ * The mode parameter will be set to the newly selected mode, one of:
+ *    TOUCH_MODE
+ *    TILT_MODE
+ *
+ *The function causes the mode variable to change value, allowing the game
+ *to keep track of the mode that user is currently using and enabling/disabling
+ *the touch/tilt functionalities accordingly.
+*/
+function changeMode(mode)
+{
+	if (mode === TILT_MODE)
+	{
+		disallowButtonPresses(); //Disable touch input
+		console.log("INFO: Tilt input enabled");
+	}
+	else if (mode === TOUCH_MODE)
+	{
+		allowButtonPresses(); //Enable touch input
+		console.log("INFO: Touch input enabled");
+	}
+	else //handle exceptions
+	{
+		console.log("ERROR: Input mode undefined");
+	}
+}
+
+/*
+ * updateDisplay
+ *
+ * Callback function that is called whenever an input event or sequence display event is fired.
+ * Gets general game information and places it nicely in the outputRefArea box as formatted text.
+*/
+function updateDisplay(passedState)
+{
+	outputRefArea.style["text-align"] = 'justify';
+	//Change 'outputRefArea' to display helpful information
+	outputRefArea.innerHTML = "Button Presses Remaining: <strong>" + buttonPressesRemaining + "</strong><br/>";
+	outputRefArea.innerHTML += "Current Sequence Length: <strong>" + sequenceLength + "</strong><br/>";
+	outputRefArea.innerHTML += "Correct Sequences at Current Level: <strong>" + correctSequencesAtCurrent + "</strong><br/>";
+	outputRefArea.innerHTML += "Sequences from next level: <strong>" + (sequenceLength - correctSequencesAtCurrent - 2) + "</strong>";
 
 
-// Function fires whenever the deviceAbsolute event listener
-// recieves new data from the sensor.
-// function converts quaterions to beta and gamma
+	//Direct the player to which state they are currently in
+	if (passedState === STATE_WATCH) //Sequence is about to display
+	{
+		outputRefArea.innerHTML += "<strong><h5>Watch Current Sequence!</strong></h5>";
+	}
+
+	else if (passedState === STATE_USER) //Player has watched the sequence
+	{
+		outputRefArea.innerHTML += "<strong><h5>Enter the Sequence!</strong><h5/>";
+	}
+
+	else if (passedState === STATE_WAIT)//Player has failed or not begun yet
+	{
+		outputRefArea.innerHTML += "<strong><h5>Start a New Game!</strong><h5/>";
+	}
+}
+
+
+//
+//  TILT INPUT FUNCTIONS
+//
+
+/*
+ * absoluteOrientationListener
+ *
+ * Function fires whenever the deviceAbsolute event listener
+ * recieves new data from the sensor.
+ * function converts quaterions to beta and gamma
+ */
 function absoluteOrientationListener(event) {
 	let radianToDegrees = 180/Math.PI;
 
@@ -152,7 +379,7 @@ function absoluteOrientationListener(event) {
 	tiltSelection(beta, gamma);
 }
 
-
+//Function that handles what button is selected without needing input
 function tiltSelection(beta, gamma)
 {
 	let degreeThreshold = 7.5;
@@ -188,7 +415,7 @@ function tiltSelection(beta, gamma)
 	// if not already returned, make sure none are selected
 }
 
-
+//Adds a thin black border to the buttons as a style to indicate when a button is selected in tilt mode.
 function tiltButtonSelect(feedbackButton)
 {
 	if (feedbackButton === undefined)
@@ -230,19 +457,18 @@ function tiltButtonSelect(feedbackButton)
 	return;
 }
 
-
 /*
-* This callback function will be called when any of the game buttons on the
-* screen is clicked on by the user (note that the user will not be able to
-* 'double-click' buttons, they will only be clickable once a button has
-* gone dark again)
-*
-* This function has a single parameter 'whichButton' that can take the
-* following values:
-*    "blue"
-*    "green"
-*    "yellow"
-*     "red"
+ * This callback function will be called when any of the game buttons on the
+ * screen is clicked on by the user (note that the user will not be able to
+ * 'double-click' buttons, they will only be clickable once a button has
+ * gone dark again)
+ *
+ * This function has a single parameter 'whichButton' that can take the
+ * following values:
+ *    "blue"
+ *    "green"
+ *    "yellow"
+ *     "red"
 */
 function buttonSelected(whichButton)
 {
@@ -270,188 +496,5 @@ function buttonSelected(whichButton)
 		updateDisplay(STATE_WATCH);
 		setTimeout(runGame,timeBetweenSequences);
 		return;
-	}
-}
-
-function sequenceProgress(result) {
-	if (result === 'failed') {
-		if (failedLastSequence === true) {
-			sequenceLength = 4;
-			correctSequencesAtCurrent = 0;
-		}
-		else if (sequenceLength > 4) {
-			sequenceLength--;
-			correctSequencesAtCurrent = 0;
-		}
-		else {
-			sequenceLength = 4;
-			correctSequencesAtCurrent = 0;
-		}
-		failedLastSequence = true;
-	}
-	else {
-		if (correctSequencesAtCurrent + 1 === sequenceLength - 2) {
-			sequenceLength++;
-			correctSequencesAtCurrent = 0;
-			failedLastSequence = false;
-		}
-		else {
-			correctSequencesAtCurrent++;
-			failedLastSequence = false;
-		}
-	}
-	return;
-}
-
-
-/*
-* This callback function will be called regularly by the main.js page.
-* It is called when it is time for a new sequence to display to the user.
-* You should return a list of strings, from the following possible strings:
-*    "blue"
-*    "green"
-*    "yellow"
-*    "red"
-*/
-function giveNextSequence()
-{
-	updateDisplay(STATE_WATCH);
-	let colours = ["blue","green","yellow","red"];
-	let colourIndex;
-	sequence = [];
-	for (let i = 0; i < sequenceLength; i++)
-	{
-		colourIndex = Math.ceil(Math.random()*4) - 1;
-		sequence.push(colours[colourIndex]);
-	}
-
-	// return statement
-	userInputSequence = [];
-	updateDisplay(STATE_WATCH);
-	return sequence;
-}
-
-
-/*
-* This callback function is called when the sequence to display to the user
-* has finished displaying and user is now able to click buttons again.
-*/
-function sequenceHasDisplayed()
-{
-	updateDisplay(STATE_USER); //Update game information to players
-	displayToastMessage("Enter the sequence."); //Prompt the user to play
-	if (controlMode === TOUCH_MODE)
-	{
-		allowButtonPresses(); //Enable user input
-	}
-}
-
-/*
-* This callback function will be called if the user takes too long to make
-* a choice.  You can generally treat a call to this function as meaning the
-* user has 'given up'. This should be counted as an incorrect sequence given
-* by the user.
-*
-* When the app is is "tilt" input mode (see Step 7) then you might instead
-* use this function to select the button that the phone is tilted towards,
-* by calling one of the following functions:
-*    selectYellowButton
-*    selectRedButton
-*    selectBlueButton
-*    selectGreenButton
-*/
-function userChoiceTimeout()
-{
-	// if in tilt mode
-	if (controlMode === TILT_MODE)
-	{
-		if (tiltSelected === undefined)
-		{
-			showFailure();
-			sequenceProgress('failed');
-			sequenceProgress('failed');
-			enterWaitState();
-			usersTurn = false;
-			return updateDisplay(STATE_WAIT);
-		}
-
-		// Select the stored selected value and then change it back to undefined.
-		allowButtonPresses(); //to temporarily allow a bug in main.js to allow button selection to complete
-		buttonPress(tiltSelected);
-		disallowButtonPresses();
-		tiltSelected = undefined;
-
-		if (userInputSequence.length !== sequenceLength)
-		{
-			displayToastMessage("Next button!");
-		}
-		userMadeChoice = true;
-
-		return;
-	}
-	else
-	{
-		showFailure();
-		sequenceProgress('failed');
-		sequenceProgress('failed');
-		disallowButtonPresses();
-		updateDisplay(STATE_WAIT);
-	}
-	return;
-}
-
-/*
-* This callback function will be called when the user taps the button at the
-* top-right of the title bar to toggle between touch- and tilt-based input.
-*
-* The mode parameter will be set to the newly selected mode, one of:
-*    TOUCH_MODE
-*    TILT_MODE
-*/
-function changeMode(mode)
-{
-	//Change mode
-	if (mode === TILT_MODE) //touch mode
-	{
-		disallowButtonPresses(); //Disable touch input
-		console.log("INFO: Tilt input enabled");
-	}
-
-	else if (mode === TOUCH_MODE) //tilt mode
-	{
-		allowButtonPresses(); //Enable touch input
-		console.log("INFO: Touch input enabled");
-	}
-
-	else //handle exceptions
-	{
-		console.log("ERROR: Input mode undefined");
-	}
-}
-
-//Handles passing game information to the player
-function updateDisplay(passedState) {
-	outputRefArea.style["text-align"] = 'justify';
-	//Change 'outputRefArea' to display helpful information
-	outputRefArea.innerHTML = "Button Presses Remaining: <strong>" + buttonPressesRemaining + "</strong><br/>";
-	outputRefArea.innerHTML += "Current Sequence Length: <strong>" + sequenceLength + "</strong><br/>";
-	outputRefArea.innerHTML += "Correct Sequences at Current Level: <strong>" + correctSequencesAtCurrent + "</strong><br/>";
-	outputRefArea.innerHTML += "Sequences from next level: <strong>" + (sequenceLength - correctSequencesAtCurrent - 2) + "</strong>";
-
-
-	//Direct the player to which state they are currently in
-	if (passedState === STATE_WATCH) //Sequence is about to display
-	{
-		outputRefArea.innerHTML += "<strong><h5>Watch Current Sequence!</strong></h5>";
-	}
-
-	else if (passedState === STATE_USER) //Player has watched the sequence
-	{
-		outputRefArea.innerHTML += "<strong><h5>Enter the Sequence!</strong><h5/>";
-	}
-
-	else if (passedState === STATE_WAIT)//Player has failed or not begun yet
-	{
-		outputRefArea.innerHTML += "<strong><h5>Start a New Game!</strong><h5/>";
 	}
 }
